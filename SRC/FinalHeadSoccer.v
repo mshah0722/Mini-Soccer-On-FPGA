@@ -1,0 +1,497 @@
+//Top Level Module for the game
+//Controls the entire game
+module FinalHeadSoccer
+	(
+		CLOCK_50,					
+		SW,	
+		KEY,
+		LEDR,
+		HEX0,
+		HEX5,
+		PS2_DAT,
+		PS2_CLK,
+		// The ports below are for the VGA output.
+		VGA_CLK,   						//	VGA Clock
+		VGA_HS,							//	VGA H_SYNC
+		VGA_VS,							//	VGA V_SYNC
+		VGA_BLANK_N,						//	VGA BLANK
+		VGA_SYNC_N,						//	VGA SYNC
+		VGA_R,   						//	VGA Red[9:0]
+		VGA_G,	 						//	VGA Green[9:0]
+		VGA_B   						//	VGA Blue[9:0]
+	);
+	
+//========================================================================================================================	
+	//User inputs
+	input [9:0] SW;
+	input [3:0] KEY;
+	
+	//DESOC pins
+	input	CLOCK_50;
+	inout PS2_CLK, PS2_DAT;	
+	
+	//Output
+	output [9:0] LEDR;
+	output [6:0] HEX0, HEX5;
+	
+	//VGA outputs
+	output			VGA_CLK;   				//	VGA Clock
+	output			VGA_HS;					//	VGA H_SYNC
+	output			VGA_VS;					//	VGA V_SYNC
+	output			VGA_BLANK_N;				//	VGA BLANK
+	output			VGA_SYNC_N;				//	VGA SYNC
+	output	[7:0]	VGA_R;   				//	VGA Red[7:0] Changed from 10 to 8-bit DAC
+	output	[7:0]	VGA_G;	 				//	VGA Green[7:0]
+	output	[7:0]	VGA_B;   				
+	
+//========================================================================================================================	
+	//Reset Keys
+	wire resetn, newGame;
+	assign resetn = KEY[0];
+	assign newGame = KEY[3];
+	
+//========================================================================================================================
+	//Rate counter
+	wire [26:0] counter;
+	
+	//Write enable for moving player
+	wire writeEn;
+	
+	//Changes rate of player movement
+	rateDivider drawDivider (CLOCK_50, 27'b1000001100110011001100110011, counter);
+	assign writeEn = (counter  == 27'b0) ? 1'b1 :  1'b0;
+	
+//========================================================================================================================	
+	//Player 1 register that stores the positon
+	reg [7:0] player1_x;
+	reg [6:0] player1_y;
+	
+	//Player 2 register that stores the position
+	reg [7:0] player2_x;
+	reg [6:0] player2_y;
+	
+	//Ball register that stores the position
+	reg [7:0] ballx;
+	reg [6:0] bally;
+	
+	//Wires to connect the output from moving the players/ball to the register
+	wire [7:0] p1x, p2x, bx;
+	wire [6:0] p1y, p2y, by;
+	
+	//Wire to connect the condition allowing the player to move (no collision occuring)
+	wire p1_move_right, p1_move_left, p1_move_up, p1_move_down;
+	wire p2_move_right, p2_move_left, p2_move_up, p2_move_down;
+
+	//Load the position for the background
+	reg [14:0] positionBG;
+
+	//Load the clear colour
+	wire [11:0] clear_colour;
+	
+	//VGA colours
+	reg [11:0] colour;
+	localparam p1_colour = 12'b111100000000;	//red
+	localparam p2_colour = 12'b000000001111;	//blue
+	localparam ball_colour = 12'b111111111111;//white
+	
+	//Keyboard registers
+	wire [7:0] data_out;
+	wire data_sent;
+	reg[0:0] w, a, s ,d, up, down, left, right, p1_kick, p2_kick;
+	
+//========================================================================================================================	
+	//Keeps track of scoring
+	//Player score registers
+	reg [3:0] p1_score, p2_score;
+	
+	//Wires to update the score
+	wire [3:0] p1_update, p2_update;
+	
+	//Hex Decoder code
+	hex_decoder p1(p1_score, HEX5);
+	hex_decoder p2(p2_score, HEX0);
+
+//========================================================================================================================	
+	//Loads the Background
+	BG_ROM test(.address(positionBG), .clock(CLOCK_50), .q(clear_colour));
+	
+//========================================================================================================================	
+	//Keyboard module
+	PS2_Controller keyboard(
+		.CLOCK_50(CLOCK_50), 
+		.reset(resetGame),  
+		.PS2_CLK(PS2_CLK),
+		.PS2_DAT(PS2_DAT),
+		.received_data(data_out),
+		.received_data_en(data_sent)
+	);
+	
+	//Converts the keyboard inputs to conditions allowing the players to move
+	always @ (posedge CLOCK_50) begin
+		//Reset kick
+		p1_kick <= 0;
+		p2_kick <= 0;
+		
+		//Keyboard recieves W
+		if(data_out == 8'b11101) begin
+			w <= 1;
+			a <= 0;
+			s <= 0;
+			d <= 0;
+		end
+		
+		//Keyboard recieves a	
+		if(data_out == 8'b11100) begin
+			w <= 0;
+			a <= 1;
+			s <= 0;
+			d <= 0;
+		end
+			
+		//Keyboard recieves s
+		if(data_out == 8'b11011) begin
+			w <= 0;
+			a <= 0;
+			s <= 1;
+			d <= 0;
+		end
+		
+		//Keyboard recieves d	
+		if(data_out == 8'b100011) begin
+			w <= 0;
+			a <= 0;
+			s <= 0;
+			d <= 1;
+		end
+		
+		//Keyboard recieves up arrow
+		if(data_out == 8'b1110101) begin
+			up <= 1;
+			left <= 0;
+			down <= 0;
+			right <= 0;
+		end
+		
+		//Keyboard recieves down arrow	
+		if(data_out == 8'b1110010) begin
+			up <= 0;
+			left <= 0;
+			down <= 1;
+			right <= 0;
+		end	
+		
+		//Keyboard recieves left arrow	
+		if(data_out == 8'b1101011) begin
+			up <= 0;
+			left <= 1;
+			down <= 0;
+			right <= 0;
+		end
+		
+		//Keyboard recieves right arrow	
+		if(data_out == 8'b1110100) begin
+			up <= 0;
+			left <= 0;
+			down <= 0;
+			right <= 1;
+		end
+		
+		//Keyboard recieves spacebar
+		if(data_out == 8'b101001)
+			p1_kick <= 1;
+
+		//Keyboard recieves enter
+		if(data_out == 8'b1011010)
+			p2_kick <= 1;
+	end
+	
+	//LEDS to confirm keyboard is recieving input
+	assign LEDR[9] = left;
+	assign LEDR[8] = up;
+	assign LEDR[7] = down;
+	assign LEDR[6] = right;
+	assign LEDR[3] = a;
+	assign LEDR[2] = w;
+	assign LEDR[1] = s;
+	assign LEDR[0] = d;
+	
+//========================================================================================================================		
+	//Detects collisions for players and determines if the player is allowed to move in a certain direction
+	player_collision p1_col(
+		.clock(CLOCK_50), 
+		.x(player1_x), 
+		.y(player1_y), 
+		.other_x(player2_x),
+		.other_y(player2_y), 
+		.ball_x(ballx), 
+		.ball_y(bally), 
+		.move_right(p1_move_right), 
+		.move_left(p1_move_left), 
+		.move_up(p1_move_up), 
+		.move_down(p1_move_down)
+	);
+	
+	player_collision p2_col(
+		.clock(CLOCK_50),
+		.x(player2_x),
+		.y(player2_y), 
+		.other_x(player1_x), 
+		.other_y(player1_y), 
+		.move_right(p2_move_right),
+		.move_left(p2_move_left),
+		.move_up(p2_move_up), 
+		.move_down(p2_move_down)
+	);
+	
+	//Moves player 1
+	move_character player1(
+		.clock(writeEn),
+		.left(a), 
+		.right(d),
+		.up(w),
+		.down(s), 
+		.xPos_in(player1_x),
+		.yPos_in(player1_y), 
+		.xPos_out(p1x), 
+		.yPos_out(p1y),
+		.resetn(resetn),
+		.resetGame(gameOver),
+		.player(1'b1), 
+		.allowed_move_r(p1_move_right), 
+		.allowed_move_l(p1_move_left), 
+		.allowed_move_u(p1_move_up),
+		.allowed_move_d(p1_move_down)
+	);
+	
+	//Moves player 2
+	move_character player2(
+		.clock(writeEn), 
+		.left(left), 
+		.right(right), 
+		.up(up), 
+		.down(down), 
+		.xPos_in(player2_x), 
+		.yPos_in(player2_y), 
+		.xPos_out(p2x),
+		.yPos_out(p2y), 
+		.resetn(resetn),
+		.resetGame(gameOver),
+		.player(1'b0), 
+		.allowed_move_r(p2_move_right), 
+		.allowed_move_l(p2_move_left),
+		.allowed_move_u(p2_move_up),
+		.allowed_move_d(p2_move_down)
+	);
+	
+	//Move ball
+	soccerball ball(
+		.clock(writeEn),
+		.player1_x(player1_x),
+		.player1_y(player1_y),
+		.player2_x(player2_x), 
+		.player2_y(player2_y),
+		.p1_kicking(p1_kick), 
+		.p2_kicking(p2_kick),
+		.resetn(resetn),
+		.resetGame(gameOver),
+		.ball_x(ballx), 
+		.ball_y(bally), 
+		.ball_x_out(bx), 
+		.ball_y_out(by)
+	);
+
+//========================================================================================================================	
+	//Store x coordinate & y coordinate
+	reg [7:0] inputx;
+	reg [6:0] inputy;
+	
+	//Counters used to draw n x n boxes (players)
+	reg[7:0] xcounter;
+	reg[6:0] ycounter;
+	
+	reg right_done = 1'b0;
+	reg left_done = 1'b0;
+	
+	//Counters used to draw a n x n ball
+	reg[7:0] ball_count_x;
+	reg[6:0] ball_count_y;
+	
+	reg[0:0] gameOver = 0;
+	
+	
+	//Registers for the clear position
+	reg[7:0] clear_x_counter = 8'b00000000;
+	reg[6:0] clear_y_counter = 7'b0000000;
+	
+	integer drawcounter = 0;
+	integer delaycounter = 0;
+	
+	//Size of ball
+	localparam ball_size = 2'b10;
+	
+	//Goal borders
+	localparam left_border = 8'b00001000; 
+	localparam right_border = 8'b10011000;
+	localparam goal_top = 7'b101100;
+	localparam goal_bot = 7'b1001110;
+	
+//========================================================================================================================	
+	//Updates variables and chooses the right variable to input to the VGA adaptor
+	always @ (posedge CLOCK_50) begin
+		positionBG <= (clear_y_counter * 160) + clear_x_counter;
+			
+		//Updates player positon registers
+		player1_x <= p1x;
+		player1_y <= p1y;
+		player2_x <= p2x;
+		player2_y <= p2y;
+		ballx <= bx;
+		bally <= by;
+		
+		if(gameOver == 1 && ballx == 8'b01010000 && bally == 7'b0111100) begin
+			gameOver <= 0;
+		end
+		
+		//SCORE
+		if(ballx + ball_size >= right_border && bally >= goal_top && bally <= goal_bot && gameOver == 0) begin //&& !right_done 
+			p1_score <= p1_score + 1'b1;
+			//right_done = 1'b1;
+			gameOver <= 1;
+		end
+		
+		else if(ballx <= left_border && bally >= goal_top && bally <= goal_bot && gameOver == 0) begin //&& !left_done 
+			p2_score <= p2_score + 1'b1;
+			//left_done = 1'b1;
+			gameOver <= 1;
+		end
+		else if(!newGame) begin
+			p1_score <= 4'b0;
+			p2_score <= 4'b0;
+		end
+
+		//Implements the background drawing
+		if(drawcounter == 0)
+			begin
+				colour <= clear_colour;
+				inputx <= clear_x_counter;
+				inputy <= clear_y_counter;
+				if(clear_x_counter == 8'd159)
+					begin
+						clear_x_counter <= 0;
+						if(clear_y_counter == 7'd119)
+							begin
+								clear_y_counter <= 0;
+								drawcounter <= 1;
+							end
+						else
+							begin
+								clear_y_counter <= clear_y_counter + 1;
+							end
+					end
+				else
+					clear_x_counter = clear_x_counter + 1;
+			end
+		
+		//Draw the players
+		//Implments final pixel and resets back to default (0,0)
+		if(xcounter == 8'b00000101 && ycounter == 7'b0000101) begin
+			if (drawcounter == 1) begin
+				inputx <= player1_x + xcounter;
+				inputy <= player1_y + ycounter;
+				colour <= p1_colour;
+				delaycounter <= delaycounter + 1;
+				if(delaycounter >= 5000) begin
+					delaycounter <= 0;
+					drawcounter <= 2;
+				end
+			end
+			if (drawcounter == 2) begin
+				inputx <= player2_x + xcounter;
+				inputy <= player2_y + ycounter;
+				colour <= p2_colour;
+				delaycounter <= delaycounter + 1;
+				if(delaycounter >= 5000) begin
+					delaycounter <= 0;
+					drawcounter <= 3;
+				end
+			end
+			xcounter <= 8'b0;
+			ycounter <= 7'b0;
+		end
+		
+		//Resets x counter and increments y to next row
+		else if (xcounter > 8'b00000101) begin
+			xcounter <= 8'b0;
+			ycounter <= ycounter + 7'b0000001;
+		end
+		
+		//Updates input and increments x counter
+		else begin
+			if (drawcounter == 1) begin
+				inputx <= player1_x + xcounter;
+				inputy <= player1_y + ycounter;
+				colour <= p1_colour;
+			end
+			if (drawcounter == 2) begin
+				inputx <= player2_x + xcounter;
+				inputy <= player2_y + ycounter;
+				colour <= p2_colour;
+			end
+			xcounter <= xcounter + 8'b00000001;
+		end
+		
+		//Updates the ball position
+		if(drawcounter == 3) begin
+			inputx <= ballx + ball_count_x;
+			inputy <= bally + ball_count_y;
+			colour <= ball_colour;
+			
+			ball_count_x <= ball_count_x + 1;
+			if(ball_count_x == 8'b10 && ball_count_y == 7'b10) begin
+				ball_count_x <= 0;
+				ball_count_y <= 0;
+			end
+			else if(ball_count_x == 8'b10) begin
+				ball_count_x <= 0;
+				ball_count_y <= ball_count_y + 1;
+			end			
+			delaycounter <= delaycounter + 1;
+			if(delaycounter >= 5000) begin
+				delaycounter <= 0;
+				drawcounter <= 4;
+			end
+		end	
+		
+		//Adds a delay to make animations
+		if (drawcounter == 4) begin
+			delaycounter <= delaycounter + 1;
+			if(delaycounter >= 2500000) begin
+				delaycounter <= 0;
+				drawcounter <= 0;
+			end
+		end
+	end
+
+//========================================================================================================================
+	//VGA Adapter to output game to the screen
+	vga_adapter VGA(
+			.resetn(resetn),	 
+			.clock(CLOCK_50),
+			.colour(colour),
+			.x(inputx),
+			.y(inputy),
+			.plot(1'b1), 	//always enabled
+			/* Signals for the DAC to drive the monitor. */
+			.VGA_R(VGA_R),
+			.VGA_G(VGA_G),
+			.VGA_B(VGA_B),
+			.VGA_HS(VGA_HS),
+			.VGA_VS(VGA_VS),
+			.VGA_BLANK(VGA_BLANK_N),
+			.VGA_SYNC(VGA_SYNC_N),
+			.VGA_CLK(VGA_CLK));
+		defparam VGA.RESOLUTION = "160x120";
+		defparam VGA.MONOCHROME = "FALSE";
+		defparam VGA.BITS_PER_COLOUR_CHANNEL = 4;
+		defparam VGA.BACKGROUND_IMAGE = "BGSprite1.mif";
+endmodule
