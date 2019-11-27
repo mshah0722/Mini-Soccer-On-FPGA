@@ -1,0 +1,95 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 2018  Intel Corporation. All rights reserved.
+# Your use of Intel Corporation's design tools, logic functions 
+# and other software and tools, and its AMPP partner logic 
+# functions, and any output files from any of the foregoing 
+# (including device programming or simulation files), and any 
+# associated documentation or information are expressly subject 
+# to the terms and conditions of the Intel Program License 
+# Subscription Agreement, the Intel Quartus Prime License Agreement,
+# the Intel FPGA IP License Agreement, or other applicable license
+# agreement, including, without limitation, that your use is for
+# the sole purpose of programming logic devices manufactured by
+# Intel and sold by Intel or its authorized distributors.  Please
+# refer to the applicable agreement for further details.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus Prime
+# Version 18.0.0 Build 614 04/24/2018 SJ Standard Edition
+# Date created = 16:44:20  November 27, 2019
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		FinalHeadSoccer_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Altera recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus Prime software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY "Cyclone V"
+set_global_assignment -name DEVICE 5CSEMA5F31C6
+set_global_assignment -name TOP_LEVEL_ENTITY FinalHeadSoccer
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 18.0.0
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "16:44:20  NOVEMBER 27, 2019"
+set_global_assignment -name LAST_QUARTUS_VERSION "18.0.0 Standard Edition"
+set_global_assignment -name VERILOG_FILE PS2_Controller/PS2_Controller.v
+set_global_assignment -name VERILOG_FILE PS2_Controller/Altera_UP_PS2_Data_In.v
+set_global_assignment -name VERILOG_FILE PS2_Controller/Altera_UP_PS2_Command_Out.v
+set_global_assignment -name VERILOG_FILE vga_adapter/vga_pll.v
+set_global_assignment -name QIP_FILE vga_adapter/vga_pll.qip
+set_global_assignment -name SOURCE_FILE vga_adapter/vga_pll.cnxerr
+set_global_assignment -name SOURCE_FILE vga_adapter/vga_pll.cnx
+set_global_assignment -name VERILOG_FILE vga_adapter/vga_controller.v
+set_global_assignment -name VERILOG_FILE vga_adapter/vga_address_translator.v
+set_global_assignment -name VERILOG_FILE vga_adapter/vga_adapter.v
+set_global_assignment -name TEXT_FILE vga_adapter/qmegawiz_errors_log.txt
+set_global_assignment -name VERILOG_FILE TestRom.v
+set_global_assignment -name QIP_FILE TestRom.qip
+set_global_assignment -name SOURCE_FILE SoccerBall.v.bak
+set_global_assignment -name VERILOG_FILE SoccerBall.v
+set_global_assignment -name MIF_FILE "SN Right Sprite.mif"
+set_global_assignment -name MIF_FILE "SN Left Sprite.mif"
+set_global_assignment -name SOURCE_FILE ScoreDisplay.v.bak
+set_global_assignment -name VERILOG_FILE ScoreDisplay.v
+set_global_assignment -name MIF_FILE "SB Sprite.mif"
+set_global_assignment -name VERILOG_FILE ROM_Background.v
+set_global_assignment -name QIP_FILE ROM_Background.qip
+set_global_assignment -name SOURCE_FILE PlayerCollision.v.bak
+set_global_assignment -name VERILOG_FILE PlayerCollision.v
+set_global_assignment -name VERILOG_FILE player1.v
+set_global_assignment -name VERILOG_FILE MS_ROM.v
+set_global_assignment -name QIP_FILE MS_ROM.qip
+set_global_assignment -name SOURCE_FILE "MS Head.png"
+set_global_assignment -name MIF_FILE "MS Head.mif"
+set_global_assignment -name SOURCE_FILE movement.v.bak
+set_global_assignment -name VERILOG_FILE movement.v
+set_global_assignment -name SOURCE_FILE img2mif.exe
+set_global_assignment -name VERILOG_FILE HeadSoccer2.v
+set_global_assignment -name VERILOG_FILE EZ_ROM.v
+set_global_assignment -name QIP_FILE EZ_ROM.qip
+set_global_assignment -name SOURCE_FILE "EZ Head.png"
+set_global_assignment -name MIF_FILE "EZ Head.mif"
+set_global_assignment -name TEXT_FILE c5_pin_model_dump.txt
+set_global_assignment -name MIF_FILE black.mif
+set_global_assignment -name SOURCE_FILE BGSprite1.png
+set_global_assignment -name MIF_FILE BGSprite1.mif
+set_global_assignment -name MIF_FILE BGSprite.mif
+set_global_assignment -name VERILOG_FILE BG_ROM.v
+set_global_assignment -name QIP_FILE BG_ROM.qip
+set_global_assignment -name MIF_FILE "BG Sprite.mif"
+set_global_assignment -name MIF_FILE background.mif
+set_global_assignment -name SOURCE_FILE background.jpg
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
