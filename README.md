@@ -5,7 +5,7 @@ Using Verilog and other tools to make Mini Soccer Game on the FPGA Board.
 The game consists of two players, one soccer ball, and two soccer nets. The two players will compete to score goals on the opposing player's net to win the game. 
 
 Technologies Used:
-Intel Quartus Prime
+Intel Quartus Prime,
 DE1-SoC Development Kit
 
 Repository:
