@@ -14,4 +14,5 @@ Game graphics can be found in the Sprites, PNG Files, and MIF Files Folders.
 Other tools utilized to make this game can be found in the Tools folder.
 
 Source Code: https://github.com/mshah0722/Mini-Soccer-On-FPGA/tree/master/SRC
+
 Video Demonstration of the game: https://github.com/mshah0722/Mini-Soccer-On-FPGA/blob/master/FPGA-Soccer-Video-Demo.mp4
